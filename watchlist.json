@@ -1,0 +1,23 @@
+{
+  "next_id": 2,
+  "watches": [
+    {
+      "id": 1,
+      "config": {
+        "detector": "venue_date",
+        "movie": "Avengers: Doomsday",
+        "requested_date": "20261217",
+        "venue_code": "PRHN",
+        "venue_label": "Prasads Multiplex: Hyderabad",
+        "url_template": "https://in.bookmyshow.com/movies/hyderabad/avengers-doomsday/buytickets/ET00526306/20261217?etCodes=*&language=english&refEventCode=ET00526306",
+        "min_references": 10,
+        "screen": "PCX Screen"
+      },
+      "state": {
+        "available": false,
+        "status": "screen unverified"
+      }
+    }
+  ],
+  "telegram_offset": 627122337
+}
