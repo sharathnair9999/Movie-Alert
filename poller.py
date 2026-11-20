@@ -207,6 +207,9 @@ def is_available_venue_date(page_text, cfg):
 
 
 def is_available(page_text, cfg):
+    if cfg.get("screen"):
+        from screen_detector import screen_available
+        return screen_available(page_text, cfg)
     detector = cfg.get("detector")
     if detector == "venue_date":
         return is_available_venue_date(page_text, cfg)
@@ -250,10 +253,7 @@ def is_available_generic(page_text, cfg):
     return has_open and not only_closed
 
 
-def main():
-    cfg = load_config()
-    state = load_json(STATE_PATH, default={"available": False}) or {"available": False}
-
+def check_target(cfg, state):
     target_desc = cfg.get("theatre") or cfg.get("requested_date", "target")
     label = f"{cfg.get('movie', 'movie')} @ {target_desc}"
 
@@ -261,18 +261,23 @@ def main():
         page = fetch(cfg)
     except requests.RequestException as exc:
         # Transient network/blocking errors shouldn't crash the workflow.
-        print(f"[{label}] fetch failed: {exc}")
-        return 0
+        print(f"[{label}] fetch failed ({type(exc).__name__})")
+        state["status"] = "fetch failed; retrying next run"
+        return state
 
     available = is_available(page, cfg)
+    state["status"] = "open" if available else "not open"
     print(f"[{label}] available={available} (was {state.get('available')})")
 
     if available and not state.get("available"):
         if cfg.get("detector") in ("bms_date", "venue_date"):
             rd = cfg["requested_date"]
             pretty = f"{rd[6:8]}-{rd[4:6]}-{rd[0:4]}"
-            venue = cfg.get("venue_label") or cfg.get("venue_code") or ""
+            venue = (cfg.get("venue_label") or cfg.get("venue_code")
+                     or ", ".join(cfg.get("venue_codes", [])))
             venue_line = f"Theatre: {venue}\n" if venue else ""
+            if cfg.get("screen"):
+                venue_line += f"Screen: {cfg['screen']}\n"
             msg = (
                 f"🎬 Booking just OPENED!\n\n"
                 f"{cfg.get('movie', 'Movie')}\n"
@@ -294,8 +299,14 @@ def main():
     if available != state.get("available"):
         state["available"] = available
         state["checked_at"] = int(time.time())
-        save_json(STATE_PATH, state)
 
+    return state
+
+
+def main():
+    cfg = load_config()
+    state = load_json(STATE_PATH, default={"available": False}) or {"available": False}
+    save_json(STATE_PATH, check_target(cfg, state))
     return 0
 
 

@@ -37,14 +37,16 @@ jobs:
           # US-based GitHub runner. Set SCRAPERAPI_KEY (or PROXY_URL) as a secret.
           SCRAPERAPI_KEY: ${{ secrets.SCRAPERAPI_KEY }}
           PROXY_URL: ${{ secrets.PROXY_URL }}
-        run: python poller.py
+        run: python bot_watch.py
 
-      - name: Persist state
+      - name: Persist watchlist and state
+        if: always()
         run: |
-          if [[ -n "$(git status --porcelain state.json)" ]]; then
+          if [[ -n "$(git status --porcelain state.json watchlist.json)" ]]; then
             git config user.name "booking-watch-bot"
             git config user.email "actions@users.noreply.github.com"
             git add state.json
+            if [[ -f watchlist.json ]]; then git add watchlist.json; fi
             git commit -m "chore: update booking-watch state [skip ci]"
             git push
           else
